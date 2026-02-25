@@ -10,7 +10,12 @@ export default defineConfig({
   ],
   build: {
     rollupOptions: {
-      external: ['@react-spring/web'],  // safe to keep if warnings return
+      // This line prevents the "Failed to resolve module specifier" error
+      external: ['@react-spring/web'],
     },
+  },
+  optimizeDeps: {
+    // Helps dev mode too
+    include: ['@react-spring/web'],
   },
 })
