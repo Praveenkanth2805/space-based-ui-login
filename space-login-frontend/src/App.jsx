@@ -4,8 +4,65 @@ import axios from 'axios'
 import AnimatedBackground from './components/AnimatedBackground'
 import FloatingCharacters from './components/FloatingCharacters'
 import MiniSpaceGame from './components/MiniSpaceGame'
+import { Canvas } from '@react-three/fiber'
+import { OrbitControls, Stars, Sphere } from '@react-three/drei'
 
 const API_URL = 'http://127.0.0.1:8000/api'
+
+function SolarSystem3D({ onClose }) {
+  return (
+    <div className="fixed inset-0 z-60 bg-black">
+      <Canvas camera={{ position: [0, 0, 25], fov: 60 }}>
+        <ambientLight intensity={0.5} />
+        <pointLight position={[10, 10, 10]} intensity={1.5} />
+        
+        <Sphere args={[2, 32, 32]} position={[0, 0, 0]}>
+          <meshStandardMaterial color="yellow" emissive="orange" emissiveIntensity={1} />
+        </Sphere>
+
+        <group rotation={[0, 0, 0]}>
+          <Sphere args={[0.4, 16, 16]} position={[4, 0, 0]}>
+            <meshStandardMaterial color="#a9a9a9" />
+          </Sphere>
+        </group>
+
+        <group rotation={[0, Math.PI / 3, 0]}>
+          <Sphere args={[0.6, 16, 16]} position={[6, 0, 0]}>
+            <meshStandardMaterial color="#e39e6e" />
+          </Sphere>
+        </group>
+
+        <group rotation={[0, Math.PI / 1.5, 0]}>
+          <Sphere args={[0.7, 16, 16]} position={[8, 0, 0]}>
+            <meshStandardMaterial color="#006994" />
+          </Sphere>
+        </group>
+
+        <group rotation={[0, Math.PI * 2, 0]}>
+          <Sphere args={[0.5, 16, 16]} position={[10, 0, 0]}>
+            <meshStandardMaterial color="#b7410e" />
+          </Sphere>
+        </group>
+
+        <group rotation={[0, Math.PI / 4, 0]}>
+          <Sphere args={[1.8, 32, 32]} position={[15, 0, 0]}>
+            <meshStandardMaterial color="#d2a679" />
+          </Sphere>
+        </group>
+
+        <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+        <OrbitControls enableZoom={true} enablePan={true} />
+      </Canvas>
+
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 z-70 px-6 py-3 bg-red-600 rounded-xl text-white font-bold hover:bg-red-700"
+      >
+        Back to Dashboard
+      </button>
+    </div>
+  )
+}
 
 function App() {
   const [username, setUsername] = useState('')
@@ -14,6 +71,7 @@ function App() {
   const [isForgot, setIsForgot] = useState(false)
   const [isSignUp, setIsSignUp] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [showSolarSystem, setShowSolarSystem] = useState(false)
   const [currentUser, setCurrentUser] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -28,25 +86,25 @@ function App() {
     return () => window.removeEventListener('mousemove', handleMouseMove)
   }, [])
 
+  // ── FIXED ── All useSpring calls moved to top level (always called)
   const rocketLaunch = useSpring({
     from: { transform: 'translateX(0px) rotate(0deg)' },
     to: success && !isLoggedIn ? { transform: 'translateX(800px) translateY(-300px) rotate(-45deg)' } : { transform: 'translateX(0px) rotate(0deg)' },
     config: { tension: 80, friction: 20 },
   })
 
-  // Small animated planets for dashboard
-  const planet1 = useSpring({
-    from: { x: -200, y: -100 },
-    to: { x: 200, y: 100 },
+  const planet1Spring = useSpring({
+    from: { x: -100 },
+    to: { x: 100 },
     loop: { reverse: true },
-    config: { duration: 25000 }
+    config: { duration: 30000 },
   })
 
-  const planet2 = useSpring({
-    from: { x: 150, y: 50 },
-    to: { x: -150, y: -150 },
+  const planet2Spring = useSpring({
+    from: { x: 80 },
+    to: { x: -80 },
     loop: { reverse: true },
-    config: { duration: 30000 }
+    config: { duration: 35000 },
   })
 
   const handleLogin = async (e) => {
@@ -107,8 +165,8 @@ function App() {
     setSuccess('')
 
     try {
-      await new Promise(r => setTimeout(r, 1500))
-      setSuccess('Reset link sent! Check email 📧')
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      setSuccess('Reset instructions sent! Check your email 📧')
       setIsForgot(false)
     } catch {
       setError('Failed to send reset email')
@@ -133,16 +191,17 @@ function App() {
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center">
       <AnimatedBackground />
 
-      {isLoggedIn ? (
+      {showSolarSystem ? (
+        <SolarSystem3D onClose={() => setShowSolarSystem(false)} />
+      ) : isLoggedIn ? (
         <div className="relative w-full max-w-4xl mx-auto z-40 my-8 p-6 bg-indigo-950/80 rounded-3xl shadow-2xl backdrop-blur-lg border border-cyan-500/30">
-          {/* Animated background planets */}
-          <animated.div className="absolute -left-20 -top-20 text-8xl opacity-60" style={planet1}>🪐</animated.div>
-          <animated.div className="absolute -right-16 bottom-10 text-7xl opacity-70" style={planet2}>🌑</animated.div>
+          {/* Animated planets – using the top-level springs */}
+          <animated.div className="absolute -left-16 -top-16 text-7xl opacity-70" style={planet1Spring}>🪐</animated.div>
+          <animated.div className="absolute -right-12 bottom-12 text-6xl opacity-80" style={planet2Spring}>🌑</animated.div>
 
-          {/* Cute astronaut character */}
+          {/* Cute astronaut */}
           <div className="text-8xl mb-6 mx-auto w-fit animate-bounce-slow">🧑‍🚀</div>
 
-          {/* Header */}
           <h1 className="text-4xl md:text-5xl font-bold mb-4 text-yellow-300 text-center">
             Welcome back, Astronaut {currentUser}!
           </h1>
@@ -151,44 +210,51 @@ function App() {
             Mission Control • All Systems Nominal
           </p>
 
-          {/* Progress Gauges */}
+          {/* Futuristic Gauges */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <div className="bg-white/5 p-5 rounded-2xl border border-cyan-500/30">
+            <div className="bg-white/5 p-5 rounded-2xl border border-cyan-500/30 shadow-lg shadow-cyan-500/20">
               <div className="text-sm mb-2 text-cyan-300">Fuel Level</div>
-              <div className="w-full bg-white/10 rounded-full h-4 overflow-hidden">
-                <div className="bg-gradient-to-r from-cyan-400 to-blue-500 h-4 w-[92%]" />
+              <div className="w-full bg-white/10 rounded-full h-5 overflow-hidden">
+                <div className="bg-gradient-to-r from-cyan-400 via-cyan-300 to-blue-500 h-5 w-[92%] animate-pulse" />
               </div>
-              <div className="text-right text-sm mt-1">92%</div>
+              <div className="text-right text-sm mt-1 font-bold">92%</div>
             </div>
 
-            <div className="bg-white/5 p-5 rounded-2xl border border-purple-500/30">
+            <div className="bg-white/5 p-5 rounded-2xl border border-purple-500/30 shadow-lg shadow-purple-500/20">
               <div className="text-sm mb-2 text-purple-300">Oxygen</div>
-              <div className="w-full bg-white/10 rounded-full h-4 overflow-hidden">
-                <div className="bg-gradient-to-r from-purple-400 to-pink-500 h-4 w-[98%]" />
+              <div className="w-full bg-white/10 rounded-full h-5 overflow-hidden">
+                <div className="bg-gradient-to-r from-purple-400 via-purple-300 to-pink-500 h-5 w-[98%] animate-pulse" />
               </div>
-              <div className="text-right text-sm mt-1">98%</div>
+              <div className="text-right text-sm mt-1 font-bold">98%</div>
             </div>
 
-            <div className="bg-white/5 p-5 rounded-2xl border border-green-500/30">
+            <div className="bg-white/5 p-5 rounded-2xl border border-green-500/30 shadow-lg shadow-green-500/20">
               <div className="text-sm mb-2 text-green-300">Shield</div>
-              <div className="w-full bg-white/10 rounded-full h-4 overflow-hidden">
-                <div className="bg-gradient-to-r from-green-400 to-emerald-500 h-4 w-[85%]" />
+              <div className="w-full bg-white/10 rounded-full h-5 overflow-hidden">
+                <div className="bg-gradient-to-r from-green-400 via-green-300 to-emerald-500 h-5 w-[85%] animate-pulse" />
               </div>
-              <div className="text-right text-sm mt-1">85%</div>
+              <div className="text-right text-sm mt-1 font-bold">85%</div>
             </div>
           </div>
 
-          {/* Logout */}
-          <button
-            onClick={handleLogout}
-            className="mx-auto block px-12 py-5 bg-red-600/80 hover:bg-red-700 rounded-2xl text-xl font-bold transition"
-          >
-            Log Out
-          </button>
+          <div className="flex flex-col sm:flex-row justify-center gap-6 mb-8">
+            <button
+              onClick={() => setShowSolarSystem(true)}
+              className="px-10 py-5 bg-gradient-to-r from-cyan-600 to-blue-700 rounded-2xl text-lg font-bold hover:scale-105 transition-transform shadow-lg shadow-cyan-500/30"
+            >
+              View Solar System
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="px-10 py-5 bg-red-600/80 hover:bg-red-700 rounded-2xl text-lg font-bold transition"
+            >
+              Log Out
+            </button>
+          </div>
         </div>
       ) : isSignUp ? (
         <div className={`glass rounded-3xl p-10 w-full max-w-md z-10 shadow-2xl transition-all ${shake ? 'animate-shake' : ''}`}>
-          {/* your sign-up form code remains the same */}
           <div className="text-center mb-8">
             <h1 className="text-5xl font-bold tracking-widest mb-2">JOIN THE FLEET</h1>
             <p className="text-cyan-300 text-sm">Create your cosmic identity</p>
@@ -218,7 +284,8 @@ function App() {
             <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 py-4 rounded-2xl font-bold text-lg tracking-widest transition-all disabled:opacity-70">
               {loading ? (
                 <div className="flex items-center justify-center gap-3">
-                  <span className="animate-spin text-2xl">🪐</span> Creating Account...
+                  <span className="animate-spin text-2xl">🪐</span>
+                  Creating Account...
                 </div>
               ) : 'Join the Space Fleet'}
             </button>
@@ -230,7 +297,6 @@ function App() {
         </div>
       ) : isForgot ? (
         <div className={`glass rounded-3xl p-10 w-full max-w-md z-10 shadow-2xl transition-all ${shake ? 'animate-shake' : ''}`}>
-          {/* forgot password form - unchanged */}
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold tracking-widest mb-2">Reset Password</h1>
             <p className="text-cyan-300 text-sm">Enter your cosmic email</p>
@@ -248,7 +314,8 @@ function App() {
             <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-cyan-400 to-purple-600 py-4 rounded-2xl font-bold text-lg tracking-widest disabled:opacity-70">
               {loading ? (
                 <div className="flex items-center justify-center gap-3">
-                  <span className="animate-spin text-2xl">🪐</span> Sending...
+                  <span className="animate-spin text-2xl">🪐</span>
+                  Sending...
                 </div>
               ) : 'SEND RESET BEACON'}
             </button>
@@ -260,7 +327,6 @@ function App() {
         </div>
       ) : (
         <div className={`glass rounded-3xl p-10 w-full max-w-md z-10 shadow-2xl transition-all ${shake ? 'animate-shake' : ''}`}>
-          {/* login form - unchanged */}
           <div className="text-center mb-8">
             <h1 className="text-5xl font-bold tracking-widest mb-2">SPACE LOGIN</h1>
             <p className="text-cyan-300 text-sm">Enter the cosmos</p>
@@ -285,7 +351,8 @@ function App() {
             <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-cyan-400 to-purple-600 hover:from-cyan-500 hover:to-purple-700 py-4 rounded-2xl font-bold text-lg tracking-widest transition-all active:scale-95 disabled:opacity-70">
               {loading ? (
                 <div className="flex items-center justify-center gap-3">
-                  <span className="animate-spin text-2xl">🪐</span> Launching...
+                  <span className="animate-spin text-2xl">🪐</span>
+                  Launching...
                 </div>
               ) : 'LAUNCH MISSION'}
             </button>
@@ -305,7 +372,10 @@ function App() {
       {!isLoggedIn && <FloatingCharacters mousePos={mousePos} />}
 
       {success && !isLoggedIn && (
-        <animated.div style={rocketLaunch} className="fixed bottom-20 right-20 text-8xl z-20 pointer-events-none">
+        <animated.div
+          style={rocketLaunch}
+          className="fixed bottom-20 right-20 text-8xl z-20 pointer-events-none"
+        >
           🚀
         </animated.div>
       )}
