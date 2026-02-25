@@ -1,90 +1,89 @@
-## Space Cartoon Login System - Technical Specification
+# Technical Specification - Space-Based UI Login Dashboard
 
-### 1. Project Overview
+## Project Overview
+A modern, immersive web application featuring a space-themed authentication system (login, signup, forgot password) with a futuristic dashboard and interactive 3D solar system viewer.
 
-The Space Cartoon Login System is an interactive, animated login interface built with **React** for the frontend and **Django** for the backend. The system includes an animated space background, floating characters (astronauts, rockets), a mini-space game during login, animated error messages, password strength meter, and forgot password flow.
+**Current Version**: 1.2.0 (February 2026)  
+**Frontend Framework**: React 18 + Vite  
+**3D Rendering**: React Three Fiber + drei  
+**Animation**: react-spring/web  
+**Styling**: Tailwind CSS (with custom glassmorphism)
 
-### 2. Tech Stack
+## Core Features
 
-#### **Frontend**
+### 1. Authentication Flow
+- Login / Signup / Forgot Password
+- Form validation (client-side + server feedback)
+- Mini password strength game (MiniSpaceGame component)
+- Success animation: rocket launch fly-out
 
-* **React (v19)** - Core UI framework
-* **TailwindCSS** - Utility-first CSS framework for fast styling
-* **PostCSS** - CSS processor to compile Tailwind directives
-* **Autoprefixer** - Ensures cross-browser CSS compatibility
-* **Axios** - HTTP client to call Django REST APIs
-* **React-Spring & Zdog** - For animations of floating characters and rockets
+### 2. Dashboard (post-login)
+- Compact, centered layout (max-w-4xl)
+- Animated floating planets (react-spring)
+- Cute astronaut emoji + bounce animation
+- Futuristic progress gauges (Fuel, Oxygen, Shield) with gradient & pulse
+- "View Solar System" button → opens immersive 3D view
+- Logout button
 
-#### **Backend**
+### 3. 3D Solar System Viewer
+- Full-screen immersive view (fixed inset-0, z-60)
+- Realistic orbital motion (different speeds per planet)
+- Self-rotation for all planets
+- Earth + orbiting Moon
+- Saturn + visible rings
+- Floating planet name labels (using @react-three/drei Text)
+- Multi-layered star field (35,000+ stars, slow gentle twinkle)
+- Soft nebula glow background (additive blending)
+- Interactive controls: drag to rotate, scroll zoom, pan
+- "Back to Dashboard" button (smooth return, no reload)
 
-* **Python 3.10**
-* **Django** - Web framework for REST API and authentication
-* **Django REST Framework (DRF)** - RESTful API endpoints
-* **SQLite** - Database for storing user credentials
+## Tech Stack
 
-### 3. Features
+| Category            | Technology                          | Version / Notes                              |
+|---------------------|-------------------------------------|----------------------------------------------|
+| Build Tool          | Vite                                | Fast HMR & build                             |
+| Frontend Framework  | React                               | 18.x                                         |
+| 3D Rendering        | @react-three/fiber                  | React renderer for Three.js                  |
+| 3D Helpers          | @react-three/drei                   | OrbitControls, Text, Stars, etc.             |
+| Animations          | @react-spring/web                   | Smooth spring-based animations               |
+| HTTP Client         | axios                               | API calls to backend                         |
+| Styling             | Tailwind CSS                        | + custom glassmorphism classes               |
+| State Management    | React useState + useEffect          | No external store needed                     |
+| Backend (assumed)   | Node.js / Express / Django          | /api/login, /api/register endpoints          |
 
-* **Login Form**: Username & password input with validation
-* **Animated Background**: Stars, planets, and space objects floating
-* **Floating Characters**: Astronauts, rockets, aliens with smooth animations
-* **Mini Space Game**: Rocket moves according to typing progress
-* **Password Strength Meter**: Visual feedback for password strength
-* **Animated Error/Success Messages**: Shaking red text for errors, green text for success
-* **Forgot Password Flow**: Prompts for email and sends reset instructions
+## Folder Structure (relevant parts)
+src/
+├── components/
+│   ├── AnimatedBackground.jsx
+│   ├── FloatingCharacters.jsx
+│   └── MiniSpaceGame.jsx
+├── App.jsx                 # Main component (login + dashboard + solar system)
+└── main.jsx
 
-### 4. Folder Structure
 
-```
-space-login-frontend/
-├── src/
-│   ├── App.jsx
-│   ├── index.js
-│   ├── index.css
-│   ├── components/
-│   │   ├── AnimatedBackground.jsx
-│   │   ├── FloatingCharacters.jsx
-│   │   ├── MiniSpaceGame.jsx
-│   │   └── LottieAnimations.jsx
+## Performance Considerations
 
-space_login_backend/
-├── users/
-│   ├── views.py
-│   ├── urls.py
-│   └── models.py
-├── manage.py
-└── settings.py
-```
+- 3D canvas uses `frameloop="demand"` (default in fiber) → only renders when needed
+- Stars count optimized (35k–45k total across layers) → good balance of beauty & perf
+- Planet geometry uses moderate segments (64) → smooth but not overkill
+- No heavy textures yet (can be added later with useTexture)
 
-### 5. Dependencies & Installation Links
+## Known Limitations & Future Enhancements
 
-| Dependency          | Purpose                      | Install                                            | Documentation                                              |
-| ------------------- | ---------------------------- | -------------------------------------------------- | ---------------------------------------------------------- |
-| TailwindCSS         | Styling & utility classes    | `npm install -D tailwindcss`                       | [Tailwind Docs](https://tailwindcss.com/docs/installation) |
-| PostCSS             | Compiles Tailwind directives | `npm install -D postcss`                           | [PostCSS](https://postcss.org/)                            |
-| Autoprefixer        | Cross-browser CSS            | `npm install -D autoprefixer`                      | [Autoprefixer](https://github.com/postcss/autoprefixer)    |
-| Axios               | API calls to backend         | `npm install axios`                                | [Axios Docs](https://axios-http.com/docs/intro)            |
-| React-Spring / Zdog | Animations                   | `npm install @react-spring/web @react-spring/zdog` | [React-Spring](https://www.react-spring.io/)               |
+- No real planet textures (currently procedural colors)
+- No comet trails, flares, or advanced shaders yet
+- No mobile touch optimization for OrbitControls (desktop-first)
+- No loading screen for 3D canvas initialization
+- Future ideas:
+  - Add Uranus & Neptune
+  - Real NASA textures
+  - Planet info popups on click
+  - Sound effects (space ambient + whoosh on orbit)
 
-### 6. API Endpoints
+## Deployment Notes
 
-#### **Login**
+- Ensure backend is running at `http://127.0.0.1:8000/api`
+- For production: build with `vite build`
+- Host static files (Netlify, Vercel, Cloudflare Pages, etc.)
 
-```
-POST /api/login/
-Body: { username, password }
-Response: { success: true/false, message: "Login message" }
-```
-
-#### **Forgot Password**
-
-```
-POST /api/forgot-password/
-Body: { email }
-Response: { success: true/false, message: "Reset email sent or error" }
-```
-
-### 7. Notes
-
-* Tailwind CLI is **not required**; React dev server with PostCSS will handle styles.
-* All animations and mini-game are handled in frontend React components.
-* The project is fully responsive and interactive for a unique login experience.
+Last updated: February 25, 2026
