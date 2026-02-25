@@ -1,30 +1,54 @@
-import { useState, useEffect, useRef } from 'react'   // ← FIXED: added useRef here
+import { useState, useEffect, useRef } from 'react'
 import { useSpring, animated } from '@react-spring/web'
 import axios from 'axios'
 import AnimatedBackground from './components/AnimatedBackground'
 import FloatingCharacters from './components/FloatingCharacters'
 import MiniSpaceGame from './components/MiniSpaceGame'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { OrbitControls, Stars, Sphere } from '@react-three/drei'
+import { OrbitControls, Stars, Text } from '@react-three/drei'
 import * as THREE from 'three'
 
 const API_URL = 'http://127.0.0.1:8000/api'
 
-function Planet({ orbitRadius, size, color, roughness = 0.7, metalness = 0.1, emissive = '#000000', emissiveIntensity = 0, orbitSpeed = 1, spinSpeed = 0.5 }) {
-  const ref = useRef()   // ← now works because useRef is imported
+// Reusable Planet with orbit, spin, optional moon/ring, and label
+function Planet({
+  name,
+  orbitRadius,
+  size,
+  color,
+  roughness = 0.7,
+  metalness = 0.1,
+  emissive = '#000000',
+  emissiveIntensity = 0,
+  orbitSpeed = 1,
+  spinSpeed = 1,
+  hasMoon = false,
+  hasRing = false,
+  labelColor = 'white',
+}) {
+  const groupRef = useRef()
+  const moonRef = useRef()
 
   useFrame((state) => {
-    const time = state.clock.getElapsedTime()
-    // Orbit around sun
-    ref.current.position.x = orbitRadius * Math.cos(time * orbitSpeed)
-    ref.current.position.z = orbitRadius * Math.sin(time * orbitSpeed)
+    const t = state.clock.getElapsedTime()
+    // Orbit around Sun
+    groupRef.current.position.x = orbitRadius * Math.cos(t * orbitSpeed)
+    groupRef.current.position.z = orbitRadius * Math.sin(t * orbitSpeed)
     // Self rotation
-    ref.current.rotation.y += 0.01 * spinSpeed
+    groupRef.current.children[0].rotation.y += 0.01 * spinSpeed
+
+    // Moon orbits planet
+    if (hasMoon && moonRef.current) {
+      moonRef.current.position.x = 4 * Math.cos(t * 8)   // faster moon orbit
+      moonRef.current.position.z = 4 * Math.sin(t * 8)
+    }
   })
 
   return (
-    <group ref={ref}>
-      <Sphere args={[size, 48, 48]}>
+    <group ref={groupRef}>
+      {/* Planet body */}
+      <mesh>
+        <sphereGeometry args={[size, 64, 64]} />
         <meshStandardMaterial
           color={color}
           roughness={roughness}
@@ -32,7 +56,44 @@ function Planet({ orbitRadius, size, color, roughness = 0.7, metalness = 0.1, em
           emissive={emissive}
           emissiveIntensity={emissiveIntensity}
         />
-      </Sphere>
+      </mesh>
+
+      {/* Moon for Earth */}
+      {hasMoon && (
+        <group ref={moonRef}>
+          <mesh>
+            <sphereGeometry args={[0.6, 32, 32]} />
+            <meshStandardMaterial color="#cccccc" roughness={0.9} metalness={0.1} />
+          </mesh>
+        </group>
+      )}
+
+      {/* Saturn rings */}
+      {hasRing && (
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[size * 1.3, size * 2.4, 64]} />
+          <meshStandardMaterial
+            color="#d4c9a8"
+            side={THREE.DoubleSide}
+            transparent
+            opacity={0.75}
+            roughness={0.6}
+          />
+        </mesh>
+      )}
+
+      {/* Floating label */}
+      <Text
+        position={[0, size + 3, 0]}
+        fontSize={2.8}
+        color={labelColor}
+        anchorX="center"
+        anchorY="middle"
+        outlineWidth={0.2}
+        outlineColor="black"
+      >
+        {name}
+      </Text>
     </group>
   )
 }
@@ -40,51 +101,110 @@ function Planet({ orbitRadius, size, color, roughness = 0.7, metalness = 0.1, em
 function SolarSystem3D({ onClose }) {
   return (
     <div className="fixed inset-0 z-60 bg-black">
-      <Canvas camera={{ position: [0, 40, 100], fov: 45 }}>
+      <Canvas camera={{ position: [0, 70, 160], fov: 40 }}>
+        {/* Lighting */}
         <ambientLight intensity={0.5} />
-        <pointLight position={[0, 0, 0]} intensity={5} color="white" />
-        <pointLight position={[50, 50, 50]} intensity={2} color="#ffcc99" />
+        <pointLight position={[0, 0, 0]} intensity={10} color="white" distance={300} />
+        <pointLight position={[100, 80, 100]} intensity={4} color="#ffe0b3" distance={250} />
 
         {/* Sun */}
-        <Sphere args={[6, 64, 64]} position={[0, 0, 0]}>
+        <mesh>
+          <sphereGeometry args={[10, 64, 64]} />
           <meshStandardMaterial
-            color="#ffdd00"
-            emissive="#ff6600"
-            emissiveIntensity={2.5}
-            roughness={0.15}
-            metalness={0.1}
+            color="#fff176"
+            emissive="#ff9800"
+            emissiveIntensity={4.2}
+            roughness={0.08}
+            metalness={0.05}
           />
-        </Sphere>
+        </mesh>
 
-        {/* Mercury */}
-        <Planet orbitRadius={12} size={1} color="#aaaaaa" roughness={0.95} metalness={0.4} orbitSpeed={4.0} spinSpeed={1.5} />
+        {/* Planets (unchanged) */}
+        <Planet name="Mercury" orbitRadius={20} size={1.5} color="#d0d0d0" roughness={0.95} metalness={0.45} orbitSpeed={4.5} spinSpeed={1.7} labelColor="#eeeeee" />
+        <Planet name="Venus" orbitRadius={32} size={3.5} color="#e0c080" roughness={0.78} metalness={0.06} emissive="#ffcc88" emissiveIntensity={0.3} orbitSpeed={2.7} spinSpeed={0.3} labelColor="#ffdd99" />
+        <Planet name="Earth" orbitRadius={48} size={3.6} color="#3a7bd5" roughness={0.62} metalness={0.05} emissive="#44aaff" emissiveIntensity={0.18} orbitSpeed={1.8} spinSpeed={1.0} hasMoon={true} labelColor="#88ddff" />
+        <Planet name="Mars" orbitRadius={65} size={2.2} color="#c1440e" roughness={0.92} metalness={0.18} orbitSpeed={1.3} spinSpeed={0.9} labelColor="#ff9999" />
+        <Planet name="Jupiter" orbitRadius={100} size={9.0} color="#d9b38c" roughness={0.45} metalness={0.28} emissive="#ffcc99" emissiveIntensity={0.25} orbitSpeed={0.6} spinSpeed={3.0} labelColor="#ffddaa" />
+        <Planet name="Saturn" orbitRadius={140} size={8.0} color="#e0d0a0" roughness={0.55} metalness={0.22} orbitSpeed={0.4} spinSpeed={2.5} hasRing={true} labelColor="#ffeecc" />
 
-        {/* Venus */}
-        <Planet orbitRadius={18} size={2.2} color="#e0c080" roughness={0.8} metalness={0.05} emissive="#ffcc88" emissiveIntensity={0.2} orbitSpeed={2.6} spinSpeed={0.4} />
+        {/* ── Ultra-realistic deep space background ── */}
+        {/* Layer 1: Dense distant stars */}
+        <Stars
+          radius={1500}
+          depth={400}
+          count={40000}
+          factor={12}
+          saturation={0}
+          fade
+          speed={0}
+        />
 
-        {/* Earth */}
-        <Planet orbitRadius={26} size={2.3} color="#3a7bd5" roughness={0.65} metalness={0.05} emissive="#44aaff" emissiveIntensity={0.12} orbitSpeed={1.9} spinSpeed={1.0} />
+        {/* Layer 2: Closer brighter stars */}
+        <Stars
+          radius={800}
+          depth={200}
+          count={15000}
+          factor={8}
+          saturation={0.1}
+          fade
+          speed={0}
+        />
 
-        {/* Mars */}
-        <Planet orbitRadius={35} size={1.5} color="#c95a3d" roughness={0.9} metalness={0.2} orbitSpeed={1.4} spinSpeed={0.9} />
+        {/* Layer 3: Very close twinkling stars */}
+        <Stars
+          radius={400}
+          depth={100}
+          count={5000}
+          factor={5}
+          saturation={0.05}
+          fade
+          speed={0}
+        />
 
-        {/* Jupiter */}
-        <Planet orbitRadius={55} size={5.5} color="#d9b38c" roughness={0.5} metalness={0.25} emissive="#ffcc99" emissiveIntensity={0.15} orbitSpeed={0.8} spinSpeed={2.5} />
+        {/* Soft nebula glow (subtle purple/blue/orange haze) */}
+        <mesh scale={[2000, 2000, 2000]}>
+          <sphereGeometry args={[1, 64, 64]} />
+          <meshBasicMaterial
+            color="#2a1a4a"
+            transparent
+            opacity={0.20}
+            blending={THREE.AdditiveBlending}
+            side={THREE.BackSide}
+          />
+        </mesh>
 
-        <Stars radius={600} depth={120} count={18000} factor={8} saturation={0} fade speed={0.2} />
-        <OrbitControls enableZoom enablePan enableRotate autoRotate autoRotateSpeed={0.4} />
+        <mesh scale={[2000, 2000, 2000]}>
+          <sphereGeometry args={[1, 64, 64]} />
+          <meshBasicMaterial
+            color="#1a3a5a"
+            transparent
+            opacity={0.06}
+            blending={THREE.AdditiveBlending}
+            side={THREE.BackSide}
+          />
+        </mesh>
+
+        {/* Controls */}
+        <OrbitControls
+          enableZoom
+          enablePan
+          enableRotate
+          autoRotate
+          autoRotateSpeed={0.3}
+          minDistance={50}
+          maxDistance={600}
+        />
       </Canvas>
 
       <button
         onClick={onClose}
-        className="absolute top-6 right-6 z-70 px-8 py-4 bg-red-700/90 hover:bg-red-800 rounded-2xl text-xl font-bold text-white shadow-2xl transition-all"
+        className="absolute top-6 right-6 z-[100] px-8 py-4 bg-gradient-to-r from-red-700 to-red-900 hover:from-red-800 hover:to-red-950 rounded-2xl text-xl font-bold text-white shadow-2xl transition-all transform hover:scale-105"
       >
         Back to Dashboard
       </button>
     </div>
   )
 }
-
 function App() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
