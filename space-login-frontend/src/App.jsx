@@ -1,62 +1,83 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'   // ← FIXED: added useRef here
 import { useSpring, animated } from '@react-spring/web'
 import axios from 'axios'
 import AnimatedBackground from './components/AnimatedBackground'
 import FloatingCharacters from './components/FloatingCharacters'
 import MiniSpaceGame from './components/MiniSpaceGame'
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, Stars, Sphere } from '@react-three/drei'
+import * as THREE from 'three'
 
 const API_URL = 'http://127.0.0.1:8000/api'
+
+function Planet({ orbitRadius, size, color, roughness = 0.7, metalness = 0.1, emissive = '#000000', emissiveIntensity = 0, orbitSpeed = 1, spinSpeed = 0.5 }) {
+  const ref = useRef()   // ← now works because useRef is imported
+
+  useFrame((state) => {
+    const time = state.clock.getElapsedTime()
+    // Orbit around sun
+    ref.current.position.x = orbitRadius * Math.cos(time * orbitSpeed)
+    ref.current.position.z = orbitRadius * Math.sin(time * orbitSpeed)
+    // Self rotation
+    ref.current.rotation.y += 0.01 * spinSpeed
+  })
+
+  return (
+    <group ref={ref}>
+      <Sphere args={[size, 48, 48]}>
+        <meshStandardMaterial
+          color={color}
+          roughness={roughness}
+          metalness={metalness}
+          emissive={emissive}
+          emissiveIntensity={emissiveIntensity}
+        />
+      </Sphere>
+    </group>
+  )
+}
 
 function SolarSystem3D({ onClose }) {
   return (
     <div className="fixed inset-0 z-60 bg-black">
-      <Canvas camera={{ position: [0, 0, 25], fov: 60 }}>
+      <Canvas camera={{ position: [0, 40, 100], fov: 45 }}>
         <ambientLight intensity={0.5} />
-        <pointLight position={[10, 10, 10]} intensity={1.5} />
-        
-        <Sphere args={[2, 32, 32]} position={[0, 0, 0]}>
-          <meshStandardMaterial color="yellow" emissive="orange" emissiveIntensity={1} />
+        <pointLight position={[0, 0, 0]} intensity={5} color="white" />
+        <pointLight position={[50, 50, 50]} intensity={2} color="#ffcc99" />
+
+        {/* Sun */}
+        <Sphere args={[6, 64, 64]} position={[0, 0, 0]}>
+          <meshStandardMaterial
+            color="#ffdd00"
+            emissive="#ff6600"
+            emissiveIntensity={2.5}
+            roughness={0.15}
+            metalness={0.1}
+          />
         </Sphere>
 
-        <group rotation={[0, 0, 0]}>
-          <Sphere args={[0.4, 16, 16]} position={[4, 0, 0]}>
-            <meshStandardMaterial color="#a9a9a9" />
-          </Sphere>
-        </group>
+        {/* Mercury */}
+        <Planet orbitRadius={12} size={1} color="#aaaaaa" roughness={0.95} metalness={0.4} orbitSpeed={4.0} spinSpeed={1.5} />
 
-        <group rotation={[0, Math.PI / 3, 0]}>
-          <Sphere args={[0.6, 16, 16]} position={[6, 0, 0]}>
-            <meshStandardMaterial color="#e39e6e" />
-          </Sphere>
-        </group>
+        {/* Venus */}
+        <Planet orbitRadius={18} size={2.2} color="#e0c080" roughness={0.8} metalness={0.05} emissive="#ffcc88" emissiveIntensity={0.2} orbitSpeed={2.6} spinSpeed={0.4} />
 
-        <group rotation={[0, Math.PI / 1.5, 0]}>
-          <Sphere args={[0.7, 16, 16]} position={[8, 0, 0]}>
-            <meshStandardMaterial color="#006994" />
-          </Sphere>
-        </group>
+        {/* Earth */}
+        <Planet orbitRadius={26} size={2.3} color="#3a7bd5" roughness={0.65} metalness={0.05} emissive="#44aaff" emissiveIntensity={0.12} orbitSpeed={1.9} spinSpeed={1.0} />
 
-        <group rotation={[0, Math.PI * 2, 0]}>
-          <Sphere args={[0.5, 16, 16]} position={[10, 0, 0]}>
-            <meshStandardMaterial color="#b7410e" />
-          </Sphere>
-        </group>
+        {/* Mars */}
+        <Planet orbitRadius={35} size={1.5} color="#c95a3d" roughness={0.9} metalness={0.2} orbitSpeed={1.4} spinSpeed={0.9} />
 
-        <group rotation={[0, Math.PI / 4, 0]}>
-          <Sphere args={[1.8, 32, 32]} position={[15, 0, 0]}>
-            <meshStandardMaterial color="#d2a679" />
-          </Sphere>
-        </group>
+        {/* Jupiter */}
+        <Planet orbitRadius={55} size={5.5} color="#d9b38c" roughness={0.5} metalness={0.25} emissive="#ffcc99" emissiveIntensity={0.15} orbitSpeed={0.8} spinSpeed={2.5} />
 
-        <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-        <OrbitControls enableZoom={true} enablePan={true} />
+        <Stars radius={600} depth={120} count={18000} factor={8} saturation={0} fade speed={0.2} />
+        <OrbitControls enableZoom enablePan enableRotate autoRotate autoRotateSpeed={0.4} />
       </Canvas>
 
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 z-70 px-6 py-3 bg-red-600 rounded-xl text-white font-bold hover:bg-red-700"
+        className="absolute top-6 right-6 z-70 px-8 py-4 bg-red-700/90 hover:bg-red-800 rounded-2xl text-xl font-bold text-white shadow-2xl transition-all"
       >
         Back to Dashboard
       </button>
@@ -86,7 +107,6 @@ function App() {
     return () => window.removeEventListener('mousemove', handleMouseMove)
   }, [])
 
-  // ── FIXED ── All useSpring calls moved to top level (always called)
   const rocketLaunch = useSpring({
     from: { transform: 'translateX(0px) rotate(0deg)' },
     to: success && !isLoggedIn ? { transform: 'translateX(800px) translateY(-300px) rotate(-45deg)' } : { transform: 'translateX(0px) rotate(0deg)' },
@@ -94,17 +114,17 @@ function App() {
   })
 
   const planet1Spring = useSpring({
-    from: { x: -100 },
-    to: { x: 100 },
+    from: { x: -120 },
+    to: { x: 120 },
     loop: { reverse: true },
-    config: { duration: 30000 },
+    config: { duration: 28000 },
   })
 
   const planet2Spring = useSpring({
-    from: { x: 80 },
-    to: { x: -80 },
+    from: { x: 100 },
+    to: { x: -100 },
     loop: { reverse: true },
-    config: { duration: 35000 },
+    config: { duration: 34000 },
   })
 
   const handleLogin = async (e) => {
@@ -195,11 +215,9 @@ function App() {
         <SolarSystem3D onClose={() => setShowSolarSystem(false)} />
       ) : isLoggedIn ? (
         <div className="relative w-full max-w-4xl mx-auto z-40 my-8 p-6 bg-indigo-950/80 rounded-3xl shadow-2xl backdrop-blur-lg border border-cyan-500/30">
-          {/* Animated planets – using the top-level springs */}
           <animated.div className="absolute -left-16 -top-16 text-7xl opacity-70" style={planet1Spring}>🪐</animated.div>
           <animated.div className="absolute -right-12 bottom-12 text-6xl opacity-80" style={planet2Spring}>🌑</animated.div>
 
-          {/* Cute astronaut */}
           <div className="text-8xl mb-6 mx-auto w-fit animate-bounce-slow">🧑‍🚀</div>
 
           <h1 className="text-4xl md:text-5xl font-bold mb-4 text-yellow-300 text-center">
@@ -210,7 +228,6 @@ function App() {
             Mission Control • All Systems Nominal
           </p>
 
-          {/* Futuristic Gauges */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
             <div className="bg-white/5 p-5 rounded-2xl border border-cyan-500/30 shadow-lg shadow-cyan-500/20">
               <div className="text-sm mb-2 text-cyan-300">Fuel Level</div>
@@ -254,7 +271,7 @@ function App() {
           </div>
         </div>
       ) : isSignUp ? (
-        <div className={`glass rounded-3xl p-10 w-full max-w-md z-10 shadow-2xl transition-all ${shake ? 'animate-shake' : ''}`}>
+        <div className={`glass rounded-3xl p-10 w-full max-w-md z-50 shadow-2xl transition-all ${shake ? 'animate-shake' : ''}`}>
           <div className="text-center mb-8">
             <h1 className="text-5xl font-bold tracking-widest mb-2">JOIN THE FLEET</h1>
             <p className="text-cyan-300 text-sm">Create your cosmic identity</p>
@@ -263,17 +280,38 @@ function App() {
           <form onSubmit={handleSignUp} className="space-y-6">
             <div>
               <label className="block text-sm mb-2 text-cyan-200">Astronaut ID</label>
-              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-xl px-5 py-4 text-white placeholder:text-white/50 focus:outline-none focus:border-cyan-400" placeholder="e.g. star_explorer42" required />
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full bg-white/10 border border-white/30 rounded-xl px-5 py-4 text-white placeholder:text-white/50 focus:outline-none focus:border-cyan-400"
+                placeholder="e.g. star_explorer42"
+                required
+              />
             </div>
 
             <div>
               <label className="block text-sm mb-2 text-cyan-200">Cosmic Email</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-xl px-5 py-4 text-white placeholder:text-white/50 focus:outline-none focus:border-cyan-400" placeholder="you@galaxy.mail" required />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-white/10 border border-white/30 rounded-xl px-5 py-4 text-white placeholder:text-white/50 focus:outline-none focus:border-cyan-400"
+                placeholder="you@galaxy.mail"
+                required
+              />
             </div>
 
             <div>
               <label className="block text-sm mb-2 text-cyan-200">Create Secret Code</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-xl px-5 py-4 text-white placeholder:text-white/50 focus:outline-none focus:border-cyan-400" placeholder="••••••••" required />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-white/10 border border-white/30 rounded-xl px-5 py-4 text-white placeholder:text-white/50 focus:outline-none focus:border-cyan-400"
+                placeholder="••••••••"
+                required
+              />
             </div>
 
             <MiniSpaceGame password={password} />
@@ -281,7 +319,11 @@ function App() {
             {error && <p className="text-red-400 text-center font-medium animate-pulse">{error}</p>}
             {success && <p className="text-green-400 text-center font-medium">{success}</p>}
 
-            <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 py-4 rounded-2xl font-bold text-lg tracking-widest transition-all disabled:opacity-70">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 py-4 rounded-2xl font-bold text-lg tracking-widest transition-all disabled:opacity-70"
+            >
               {loading ? (
                 <div className="flex items-center justify-center gap-3">
                   <span className="animate-spin text-2xl">🪐</span>
@@ -290,13 +332,17 @@ function App() {
               ) : 'Join the Space Fleet'}
             </button>
 
-            <button type="button" onClick={() => setIsSignUp(false)} className="text-cyan-300 hover:text-cyan-200 text-sm underline block mx-auto mt-4">
+            <button
+              type="button"
+              onClick={() => setIsSignUp(false)}
+              className="text-cyan-300 hover:text-cyan-200 text-sm underline block mx-auto mt-4"
+            >
               ← Already have an account? Login
             </button>
           </form>
         </div>
       ) : isForgot ? (
-        <div className={`glass rounded-3xl p-10 w-full max-w-md z-10 shadow-2xl transition-all ${shake ? 'animate-shake' : ''}`}>
+        <div className={`glass rounded-3xl p-10 w-full max-w-md z-50 shadow-2xl transition-all ${shake ? 'animate-shake' : ''}`}>
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold tracking-widest mb-2">Reset Password</h1>
             <p className="text-cyan-300 text-sm">Enter your cosmic email</p>
@@ -305,13 +351,24 @@ function App() {
           <form onSubmit={handleForgot} className="space-y-6">
             <div>
               <label className="block text-sm mb-2 text-cyan-200">Cosmic Email</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-xl px-5 py-4 text-white placeholder:text-white/50 focus:outline-none focus:border-cyan-400" placeholder="you@starfleet.com" required />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-white/10 border border-white/30 rounded-xl px-5 py-4 text-white placeholder:text-white/50 focus:outline-none focus:border-cyan-400"
+                placeholder="you@starfleet.com"
+                required
+              />
             </div>
 
             {error && <p className="text-red-400 text-center font-medium">{error}</p>}
             {success && <p className="text-green-400 text-center font-medium">{success}</p>}
 
-            <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-cyan-400 to-purple-600 py-4 rounded-2xl font-bold text-lg tracking-widest disabled:opacity-70">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-cyan-400 to-purple-600 py-4 rounded-2xl font-bold text-lg tracking-widest disabled:opacity-70"
+            >
               {loading ? (
                 <div className="flex items-center justify-center gap-3">
                   <span className="animate-spin text-2xl">🪐</span>
@@ -320,13 +377,17 @@ function App() {
               ) : 'SEND RESET BEACON'}
             </button>
 
-            <button type="button" onClick={() => setIsForgot(false)} className="text-cyan-300 hover:text-cyan-200 text-sm underline block mx-auto mt-4">
+            <button
+              type="button"
+              onClick={() => setIsForgot(false)}
+              className="text-cyan-300 hover:text-cyan-200 text-sm underline block mx-auto mt-4"
+            >
               ← Back to Login
             </button>
           </form>
         </div>
       ) : (
-        <div className={`glass rounded-3xl p-10 w-full max-w-md z-10 shadow-2xl transition-all ${shake ? 'animate-shake' : ''}`}>
+        <div className={`glass rounded-3xl p-10 w-full max-w-md z-50 shadow-2xl transition-all ${shake ? 'animate-shake' : ''}`}>
           <div className="text-center mb-8">
             <h1 className="text-5xl font-bold tracking-widest mb-2">SPACE LOGIN</h1>
             <p className="text-cyan-300 text-sm">Enter the cosmos</p>
@@ -335,12 +396,26 @@ function App() {
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
               <label className="block text-sm mb-2 text-cyan-200">Astronaut ID (Username)</label>
-              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-xl px-5 py-4 text-white placeholder:text-white/50 focus:outline-none focus:border-cyan-400" placeholder="e.g. neil_armstrong" required />
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full bg-white/10 border border-white/30 rounded-xl px-5 py-4 text-white placeholder:text-white/50 focus:outline-none focus:border-cyan-400"
+                placeholder="e.g. neil_armstrong"
+                required
+              />
             </div>
 
             <div>
               <label className="block text-sm mb-2 text-cyan-200">Secret Code (Password)</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-xl px-5 py-4 text-white placeholder:text-white/50 focus:outline-none focus:border-cyan-400" placeholder="••••••••" required />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-white/10 border border-white/30 rounded-xl px-5 py-4 text-white placeholder:text-white/50 focus:outline-none focus:border-cyan-400"
+                placeholder="••••••••"
+                required
+              />
             </div>
 
             <MiniSpaceGame password={password} />
@@ -348,7 +423,11 @@ function App() {
             {error && <p className="text-red-400 text-center font-medium animate-pulse">{error}</p>}
             {success && <p className="text-green-400 text-center font-medium">{success}</p>}
 
-            <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-cyan-400 to-purple-600 hover:from-cyan-500 hover:to-purple-700 py-4 rounded-2xl font-bold text-lg tracking-widest transition-all active:scale-95 disabled:opacity-70">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-cyan-400 to-purple-600 hover:from-cyan-500 hover:to-purple-700 py-4 rounded-2xl font-bold text-lg tracking-widest transition-all active:scale-95 disabled:opacity-70"
+            >
               {loading ? (
                 <div className="flex items-center justify-center gap-3">
                   <span className="animate-spin text-2xl">🪐</span>
@@ -358,10 +437,18 @@ function App() {
             </button>
 
             <div className="flex flex-col sm:flex-row justify-center gap-6 text-sm mt-6">
-              <button type="button" onClick={() => setIsForgot(true)} className="text-cyan-300 hover:text-cyan-200 underline">
+              <button
+                type="button"
+                onClick={() => setIsForgot(true)}
+                className="text-cyan-300 hover:text-cyan-200 underline"
+              >
                 Forgot password?
               </button>
-              <button type="button" onClick={() => setIsSignUp(true)} className="text-cyan-300 hover:text-cyan-200 underline">
+              <button
+                type="button"
+                onClick={() => setIsSignUp(true)}
+                className="text-cyan-300 hover:text-cyan-200 underline"
+              >
                 Create Account
               </button>
             </div>
