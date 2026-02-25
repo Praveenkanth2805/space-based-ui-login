@@ -2,15 +2,10 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-change-this-key'
+SECRET_KEY = 'django-insecure-space-cartoon-login-2026-demo-key-change-in-prod'
 
 DEBUG = True
-
 ALLOWED_HOSTS = []
-
-# ========================
-# INSTALLED APPS
-# ========================
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -19,16 +14,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
-    'corsheaders',  # CORS
+    'rest_framework',
+    'corsheaders',
+    'users',
 ]
 
-# ========================
-# MIDDLEWARE
-# ========================
-
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # MUST BE FIRST
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -38,15 +30,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# ========================
-# URLS
-# ========================
-
 ROOT_URLCONF = 'space_login_backend.urls'
-
-# ========================
-# TEMPLATES (Required for Admin)
-# ========================
 
 TEMPLATES = [
     {
@@ -64,9 +48,7 @@ TEMPLATES = [
     },
 ]
 
-# ========================
-# DATABASE
-# ========================
+WSGI_APPLICATION = 'space_login_backend.wsgi.application'
 
 DATABASES = {
     'default': {
@@ -75,51 +57,26 @@ DATABASES = {
     }
 }
 
-# ========================
-# PASSWORD VALIDATION
-# ========================
-
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# ========================
-# INTERNATIONALIZATION
-# ========================
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
 USE_TZ = True
 
-# ========================
-# STATIC FILES
-# ========================
-
 STATIC_URL = 'static/'
-
-# ========================
-# DEFAULT PRIMARY KEY
-# ========================
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# ========================
-# CORS SETTINGS (React)
-# ========================
-
+# CORS (for frontend on port 5173)
 CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ]
+}

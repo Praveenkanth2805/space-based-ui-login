@@ -1,100 +1,15 @@
+@import "tailwindcss";
+
 body {
   margin: 0;
-  font-family: 'Segoe UI', sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #0a0a2e;
+  color: white;
   overflow: hidden;
 }
 
-/* Space Background */
-.space-container {
-  height: 100vh;
-  width: 100%;
-  background: radial-gradient(circle at bottom, #1b2735 0%, #090a0f 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-/* Stars */
-.space-container::after {
-  content: "";
-  position: absolute;
-  width: 200%;
-  height: 200%;
-  background: transparent url("https://www.transparenttextures.com/patterns/stardust.png") repeat;
-  animation: moveStars 60s linear infinite;
-}
-
-@keyframes moveStars {
-  from { transform: translateY(0); }
-  to { transform: translateY(-1000px); }
-}
-
-/* Login Card */
-.login-card {
-  position: relative;
-  z-index: 2;
-  background: rgba(0, 0, 0, 0.6);
-  padding: 40px;
-  border-radius: 20px;
-  width: 320px;
-  text-align: center;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 0 40px rgba(0, 200, 255, 0.5);
-}
-
-.login-card h1 {
-  color: #00d4ff;
-  margin-bottom: 20px;
-}
-
-.login-card input {
-  width: 100%;
-  padding: 10px;
-  margin: 10px 0;
-  border-radius: 8px;
-  border: none;
-  outline: none;
-}
-
-.login-card button {
-  width: 100%;
-  padding: 10px;
-  background: #00d4ff;
-  border: none;
-  border-radius: 8px;
-  color: black;
-  font-weight: bold;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-.login-card button:hover {
-  background: #00aacc;
-}
-
-/* Rocket */
-.rocket {
-  position: absolute;
-  bottom: 10%;
-  font-size: 40px;
-  transition: left 0.5s ease;
-}
-
-/* Messages */
-.success {
-  color: #00ff99;
-}
-
-.error {
-  color: #ff4d4d;
-  animation: shake 0.4s;
-}
-
-@keyframes shake {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  50% { transform: translateX(5px); }
-  75% { transform: translateX(-5px); }
-  100% { transform: translateX(0); }
+.glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
